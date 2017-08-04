@@ -103,15 +103,15 @@ def main():
 
     # run the test data through
 
-    raw_test = pd.read_csv('../../test.csv')
+    raw_test = pd.read_csv('../test.csv')
     test_data = clean_data(raw_test, return_labels=False)
 
-    res = pd.read_csv('../../Results.csv')
+    res = pd.read_csv('../results.csv')
     res = res.assign(Attrition=clf.predict(test_data))
 
     res['Attrition'] = pd.Series(np.where(res.Attrition.values == 1, 'Yes', 'No'),
                        res.Attrition.index)
-    res.to_csv('../../SKLearn_Classifier_Results.csv', index=False)
+    res.to_csv('../SKLearn_Classifier_Results.csv', index=False)
 
 
 
