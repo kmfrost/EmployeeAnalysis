@@ -5,12 +5,16 @@ Spyder Editor
 This is a temporary script file.
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
 
 from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier
 from sklearn.metrics import roc_curve, auc
 from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
+from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 
 
@@ -60,26 +64,53 @@ def main():
 #                                 random_state=0)
 
     # extra random forest classifier (best)
-    clf = ExtraTreesClassifier(n_estimators=1000, max_depth=None,
-                               min_samples_split=2, random_state=0)
+#    clf = ExtraTreesClassifier(n_estimators=1000, max_depth=None,
+#                               min_samples_split=2, random_state=0)
 
+    # naive bayes classifier
+#    clf = GaussianNB()
+
+    # SVM classifier
+    clf = SVC(kernel='linear', probability=True)
 
     clf.fit(x_train, y_train)
     p = clf.predict_proba(x_test)
+    cv_score = clf.score(x_test, y_test)*100.0
+    print("Prediction score = %0.3f" % cv_score)
 
-    fpr, tpr, _ = roc_curve(y_test, p[:,1])
-    roc_auc = auc(fpr, tpr)
-    print("ROC area = %0.2f", roc_auc)
+
+    # Compute ROC curve and ROC area for each class
+    fpr = dict()
+    tpr = dict()
+    roc_auc = dict()
+    for i in range(2):
+        fpr[i], tpr[i], _ = roc_curve(y_test, p[:, i])
+        roc_auc[i] = auc(fpr[i], tpr[i])
+    print("ROC area = %0.7f" % roc_auc[1])
+
+    plt.figure()
+    lw = 2
+    plt.plot(fpr[1], tpr[1], color='darkorange',
+             lw=lw, label='ROC curve (area = %0.2f)' % roc_auc[1])
+    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver operating characteristic example')
+    plt.legend(loc="lower right")
+    plt.show()
+
+    # run the test data through
 
     raw_test = pd.read_csv('../../test.csv')
     test_data = clean_data(raw_test, return_labels=False)
-    p_test = clf.predict_proba(test_data)
 
     res = pd.read_csv('../../Results.csv')
-    res = res.assign(Attrition=pd.Series(p_test[:,1] > 0.5).values)
+    res = res.assign(Attrition=clf.predict(test_data))
 
-    res['Attrition'] = pd.Series(np.where(res.Attrition.values == True, 'Yes', 'No'),
-                       res.index)
+    res['Attrition'] = pd.Series(np.where(res.Attrition.values == 1, 'Yes', 'No'),
+                       res.Attrition.index)
     res.to_csv('../../SKLearn_Classifier_Results.csv', index=False)
 
 
