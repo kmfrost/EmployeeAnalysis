@@ -107,11 +107,12 @@ def main():
     test_data = clean_data(raw_test, return_labels=False)
 
     res = pd.read_csv('../results.csv')
-    res = res.assign(Attrition=clf.predict(test_data))
+#    res = res.assign(Attrition=clf.predict(test_data))
+    res = res.assign(Attrition=clf.predict_proba(test_data))
 
-    res['Attrition'] = pd.Series(np.where(res.Attrition.values == 1, 'Yes', 'No'),
+    res['Attrition'] = pd.Series(np.where(res.Attrition.values > 0.8, 'No', 'Yes'),
                        res.Attrition.index)
-    res.to_csv('../SKLearn_SVM_Results.csv', index=False)
+    res.to_csv('../SKLearn_SVM_Results_low_thresh.csv', index=False)
 
 
 
