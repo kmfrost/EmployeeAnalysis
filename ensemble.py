@@ -4,20 +4,19 @@ Spyder Editor
 
 This is a temporary script file.
 """
-
+import cPickle as pkl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
 
-from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier, AdaBoostClassifier, BaggingClassifier
+from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier, AdaBoostClassifier, BaggingClassifier, VotingClassifier
 from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.gaussian_process.kernels import RBF
 from sklearn.metrics import roc_curve, auc, confusion_matrix
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.neural_network import MLPClassifier
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 
@@ -26,8 +25,7 @@ def clean_data(raw_data, return_labels=True):
 
     # these are all the same across all employees, so remove them
     cols_to_remove = ['EmployeeCount', 'Over18', 'StandardHours', 
-                      'DailyRate', 'HourlyRate', 'MonthlyRate', 
-                      'PerformanceRating']
+                      'DailyRate', 'HourlyRate']
     for each_col in cols_to_remove:
         del raw_data[each_col]
 
@@ -37,13 +35,9 @@ def clean_data(raw_data, return_labels=True):
         del raw_data['Attrition']
         labels = pd.Series(np.where(labels.Attrition.values == 'Yes', 1, 0),
                            labels.index)
-    
-    # Convert travel to corresponding ints    
-    travel_dict = {"Non-Travel":0, "Travel_Rarely":1, "Travel_Frequently":2}
-    raw_data.BusinessTravel.replace(travel_dict, inplace=True)
 
     # these are categorical categories, we're going to change them to binary
-    cols_to_transform = [ 'Department', 'EducationField',
+    cols_to_transform = [ 'BusinessTravel', 'Department', 'EducationField',
                           'Gender', 'JobRole', 'MaritalStatus', 'OverTime']
 
     data = pd.get_dummies(raw_data, columns=cols_to_transform, drop_first=True)
@@ -65,49 +59,71 @@ def main():
     # split the data into training and testing sets
     x_train, x_test, y_train, y_test = train_test_split(
         data, labels, test_size=0.2, random_state=42)
-    
-    # read in and clean the test data
-    raw_test = pd.read_csv('../test.csv')
-    test_data = clean_data(raw_test, return_labels=False)
 
     # random forest classifier
-#    clf = RandomForestClassifier(n_estimators=1000, max_depth=None,
-#                                 min_samples_split=2, random_state=0)
+    RF_clf = RandomForestClassifier(max_depth=None,
+                                    random_state=0)
 
     # Decision tree classifier
-#    clf = DecisionTreeClassifier(max_depth=None, min_samples_split=2,
-#                                 random_state=0)
+    DT_clf = DecisionTreeClassifier(max_depth=None,
+                                    random_state=0)
 
     # extra random forest classifier (best)
-#    clf = ExtraTreesClassifier(n_estimators=1000, max_depth=None,
-#                               min_samples_split=2, random_state=0)
+    ET_clf = ExtraTreesClassifier(max_depth=None,
+                                  random_state=0)
 
     # naive bayes classifier
-#    clf = GaussianNB()
+    NB_clf = GaussianNB()
 
     # SVM classifier
-#    clf = SVC(kernel='linear', probability=True)
+    SVC_clf = SVC(probability=True)
 #    clf = BaggingClassifier(base_estimator=clfi, n_estimators=50, 
 #                            max_samples=0.8, max_features=0.9, bootstrap=False,
 #                            bootstrap_features=False)
 
     #Nearest neighbor
-#    clf = KNeighborsClassifier(n_neighbors=12, weights='distance', p=3)
+    KNN_clf = KNeighborsClassifier(weights='distance')
 
     # Gaussian process
-#    clf = GaussianProcessClassifier(1.0*RBF(0.5), warm_start=True)
+    GP_clf = GaussianProcessClassifier(1.0*RBF(0.5))
 
     # AdaBoost
-    clfi = AdaBoostClassifier(n_estimators=90, learning_rate=0.24)
-    clf = BaggingClassifier(base_estimator=clfi, n_estimators=50, 
-                            max_samples=0.8, max_features=0.9, bootstrap=True,
-                            bootstrap_features=True)
+    AB_clf = AdaBoostClassifier()
+#    clf = BaggingClassifier(base_estimator=clfi, n_estimators=50, 
+#                            max_samples=0.5, max_features=0.6, bootstrap=True,
+#                            bootstrap_features=True)
 
-    # MLP
-#    clf = MLPClassifier(hidden_layer_sizes=3, activation='logistic')
 
-    clf.fit(x_train, y_train)
-    p = clf.predict_proba(x_test)
+#    clf = VotingClassifier(estimators=[('RF', RF_clf), ('DT', DT_clf),
+#                                       ('ET', ET_clf), ('NB', NB_clf),
+#                                       ('SVC', SVC_clf), ('KNN', KNN_clf),
+#                                       ('GP', GP_clf), ('AB', AB_clf)],
+#                           voting='soft')
+#
+#    params = {'RF__n_estimators':[50, 2000], 'RF__min_samples_split':[1,5],
+#              'DT__min_samples_split':[1,5], 'ET__n_estimators':[50, 2000],
+#              'ET__min_samples_split':[1,5], 'KNN__n_neighbors': [1,25],
+#              'KNN__p':[1,5], 'AB__n_estimators':[50,2000], 
+#              'GP__warm_start':[False, True], 'AB__learning_rate':[0.01, 1.],
+#              'SVC__kernel': ['linear', 'rbf', 'poly', 'sigmoid']}
+#    grid = GridSearchCV(estimator=clf, param_grid=params, cv=5)
+#    grid.fit(x_train, y_train)
+#    clf = VotingClassifier(estimators=[('RF', RF_clf), ('SVC', SVC_clf),
+#                                       ('KNN', KNN_clf), ('AB', AB_clf)], 
+#                           voting='soft')
+
+#    params = {'RF__n_estimators':[50, 100, 250, 500, 1000, 2000], 
+#              'RF__min_samples_split':[1,5],
+#              'KNN__n_neighbors': [1,25],'KNN__p':[1,5], 
+#              'AB__n_estimators':[50, 100, 250, 500, 1000, 2000],
+#              'AB__learning_rate':[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.],
+#              'SVC__kernel': ['linear', 'rbf', 'poly', 'sigmoid']}
+#    grid = GridSearchCV(estimator=clf, param_grid=params, cv=5, n_jobs=8, verbose=5)
+#
+    grid = pkl.load(open('grid_search.pkl', 'r'))
+    grid.fit(x_train, y_train)
+    pkl.dump(grid, open('grid_search.pkl', 'w'))
+    p = grid.predict_proba(x_test)
     cv_score = clf.score(x_test, y_test)*100.0
     print("Prediction score = %0.3f" % cv_score)
 
@@ -152,15 +168,16 @@ def main():
 
     # run the test data through
 
+    raw_test = pd.read_csv('../test.csv')
+    test_data = clean_data(raw_test, return_labels=False)
     clf.fit(data, labels)
 
     res = pd.read_csv('../results.csv')
 #    res = res.assign(Attrition=clf.predict(test_data))
     res = res.assign(Attrition=clf.predict_proba(test_data))
 
-    thresh_bump = 0.0065
+    thresh_bump = 0.025
     res['Attrition'] = pd.Series(np.where(res.Attrition.values > 1-thresh + thresh_bump, 'No', 'Yes'),
-#    res['Attrition'] = pd.Series(np.where(res.Attrition.values > 0.855 , 'No', 'Yes'),
                        res.Attrition.index)
     res.to_csv('../SKLearn_Results.csv', index=False)
     print('Threshold: {0}'.format(1-thresh+thresh_bump))
