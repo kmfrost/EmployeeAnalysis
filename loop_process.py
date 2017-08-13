@@ -59,13 +59,12 @@ def clean_data(raw_data, return_labels=True):
 def main():
     raw_data = pd.read_csv('../train.csv')
     data, labels = clean_data(raw_data)
-
     
     # read in and clean the test data
     raw_test = pd.read_csv('../test.csv')
     test_data = clean_data(raw_test, return_labels=False)
 
-    num_runs = 50 
+    num_runs = 100
     all_probs = np.zeros((raw_test.shape[0], num_runs)) 
     all_threshes = []
     for this_run in xrange(num_runs):
@@ -74,7 +73,7 @@ def main():
 
         # split the data into training and testing sets
         x_train, x_test, y_train, y_test = train_test_split(
-            data, labels, test_size=0.1)
+            data, labels, test_size=0.025)
 
     ## Classifiers: ##
     # random forest classifier
@@ -93,8 +92,8 @@ def main():
     #    clf = GaussianNB()
     
         # SVM classifier
-#        class_weights = {0:1., 1:2. }  
-#        clf = SVC(kernel='linear', probability=True, C=0.25, class_weight=class_weights)
+        class_weights = {0:1., 1:2. }  
+        clf = SVC(kernel='linear', probability=True, C=0.25, class_weight=class_weights)
     #    clf = BaggingClassifier(base_estimator=clfi, n_estimators=50, 
     #                            max_samples=0.8, max_features=0.9, bootstrap=False,
     #                            bootstrap_features=False)
@@ -106,7 +105,7 @@ def main():
     #    clf = GaussianProcessClassifier(1.0*RBF(0.5), warm_start=True)
     
         # AdaBoost
-        clf = AdaBoostClassifier(n_estimators=90, learning_rate=0.24)
+#        clf = AdaBoostClassifier(n_estimators=90, learning_rate=0.24)
 #        clf = BaggingClassifier(base_estimator=clfi, n_estimators=50, 
 #                                max_samples=0.8, max_features=0.9, bootstrap=True,
 #                               bootstrap_features=True)
@@ -160,7 +159,6 @@ def main():
 #    
         # run the test data through
     
-        clf.fit(data, labels)
         all_probs[:,this_run] = clf.predict_proba(test_data)[:,0]
         all_threshes.append(thresh)
     # take the mean of all the runs

@@ -120,11 +120,11 @@ def main():
 #              'SVC__kernel': ['linear', 'rbf', 'poly', 'sigmoid']}
 #    grid = GridSearchCV(estimator=clf, param_grid=params, cv=5, n_jobs=8, verbose=5)
 #
-    grid = pkl.load(open('grid_search.pkl', 'r'))
-    grid.fit(x_train, y_train)
-    pkl.dump(grid, open('grid_search.pkl', 'w'))
+    grid = pkl.load(open('grid_search.pkl', 'rb'))
+    #grid.fit(x_train, y_train)
+    #pkl.dump(grid, open('grid_search.pkl', 'w'))
     p = grid.predict_proba(x_test)
-    cv_score = clf.score(x_test, y_test)*100.0
+    cv_score = grid.score(x_test, y_test)*100.0
     print("Prediction score = %0.3f" % cv_score)
 
 

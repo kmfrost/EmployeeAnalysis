@@ -49,7 +49,7 @@ def clean_data(raw_data, return_labels=True):
     data = pd.get_dummies(raw_data, columns=cols_to_transform, drop_first=True)
 
     # normalize each column
-    data = (data - data.mean()) / (data.max() - data.min())
+#    data = (data - data.mean()) / (data.max() - data.min())
 
     if return_labels:
         return data, labels
@@ -86,7 +86,8 @@ def main():
 #    clf = GaussianNB()
 
     # SVM classifier
-#    clf = SVC(kernel='linear', probability=True)
+    class_weights = {0:1., 1:2.}
+    clf = SVC(kernel='linear', probability=True)
 #    clf = BaggingClassifier(base_estimator=clfi, n_estimators=50, 
 #                            max_samples=0.8, max_features=0.9, bootstrap=False,
 #                            bootstrap_features=False)
@@ -98,10 +99,10 @@ def main():
 #    clf = GaussianProcessClassifier(1.0*RBF(0.5), warm_start=True)
 
     # AdaBoost
-    clfi = AdaBoostClassifier(n_estimators=90, learning_rate=0.24)
-    clf = BaggingClassifier(base_estimator=clfi, n_estimators=50, 
-                            max_samples=0.8, max_features=0.9, bootstrap=True,
-                            bootstrap_features=True)
+#    clfi = AdaBoostClassifier(n_estimators=90, learning_rate=0.24)
+#    clf = BaggingClassifier(base_estimator=clfi, n_estimators=50, 
+#                            max_samples=0.8, max_features=0.9, bootstrap=True,
+#                            bootstrap_features=True)
 
     # MLP
 #    clf = MLPClassifier(hidden_layer_sizes=3, activation='logistic')
@@ -158,7 +159,7 @@ def main():
 #    res = res.assign(Attrition=clf.predict(test_data))
     res = res.assign(Attrition=clf.predict_proba(test_data))
 
-    thresh_bump = 0.0065
+    thresh_bump = 0.0066
     res['Attrition'] = pd.Series(np.where(res.Attrition.values > 1-thresh + thresh_bump, 'No', 'Yes'),
 #    res['Attrition'] = pd.Series(np.where(res.Attrition.values > 0.855 , 'No', 'Yes'),
                        res.Attrition.index)
