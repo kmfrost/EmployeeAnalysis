@@ -8,7 +8,7 @@ This is a temporary script file.
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
+import pdb
 
 from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier, AdaBoostClassifier, BaggingClassifier
 from sklearn.gaussian_process import GaussianProcessClassifier
@@ -22,7 +22,7 @@ from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 
 
-def clean_data(raw_data, return_labels=True):
+def process_data(raw_data, return_labels=True):
 
     # these are all the same across all employees, so remove them
     cols_to_remove = ['EmployeeCount', 'Over18', 'StandardHours', 
@@ -30,6 +30,7 @@ def clean_data(raw_data, return_labels=True):
                       'PerformanceRating']
     for each_col in cols_to_remove:
         del raw_data[each_col]
+
 
     if return_labels:
         # pull out the label (attrition)
@@ -49,18 +50,28 @@ def clean_data(raw_data, return_labels=True):
     data = pd.get_dummies(raw_data, columns=cols_to_transform, drop_first=True)
 
     # normalize each column
-#    data = (data - data.mean()) / (data.max() - data.min())
+    data = (data - data.mean()) / data.std()
 
     if return_labels:
         return data, labels
     else:
         return data
 
+def clean_data(data, cols):
+    """
+    Clean up the text by removing spaces and & from job titles and roles
+    """
+    for c in cols:
+        data[c] = data[c].str.replace(' ', '')
+        data[c] = data[c].str.replace('&', '')
+        data[c] = data[c].str.replace('-', '_')
+    return data
+
 
 def main():
     np.random.seed(5)
     raw_data = pd.read_csv('../train.csv')
-    data, labels = clean_data(raw_data)
+    data, labels = process_data(raw_data)
 
     # split the data into training and testing sets
     x_train, x_test, y_train, y_test = train_test_split(
@@ -68,7 +79,7 @@ def main():
     
     # read in and clean the test data
     raw_test = pd.read_csv('../test.csv')
-    test_data = clean_data(raw_test, return_labels=False)
+    test_data = process_data(raw_test, return_labels=False)
 
     # random forest classifier
 #    clf = RandomForestClassifier(n_estimators=1000, max_depth=None,
@@ -87,7 +98,7 @@ def main():
 
     # SVM classifier
     class_weights = {0:1., 1:2.}
-    clf = SVC(kernel='linear', probability=True)
+    clf = SVC(kernel='linear', probability=True, class_weight=class_weights)
 #    clf = BaggingClassifier(base_estimator=clfi, n_estimators=50, 
 #                            max_samples=0.8, max_features=0.9, bootstrap=False,
 #                            bootstrap_features=False)
@@ -105,7 +116,7 @@ def main():
 #                            bootstrap_features=True)
 
     # MLP
-#    clf = MLPClassifier(hidden_layer_sizes=3, activation='logistic')
+#    clf = MLPClassifier(hidden_layer_sizes=(3,), activation='logistic')
 
     clf.fit(x_train, y_train)
     p = clf.predict_proba(x_test)
