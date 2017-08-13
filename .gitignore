@@ -47,5 +47,5 @@ Temporary Items
 .apdisk
 
 #Tmp files
-#*.pyc
-#*.pkl
+*.pyc
+*.pkl
