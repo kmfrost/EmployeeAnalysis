@@ -179,13 +179,14 @@ def main():
                                     bootstrap_features=True)
 
     classifiers = [       RF_clf, SVC_clf, KNN_clf, MLP_clf_bag, AB_clf]
-    classifier_weights = [10,     50,      10,      30,          50]   
+    classifier_weights = [10,     40,      20,      30,          50]   
  
-    num_outer = 1 # change random seed each time
-    num_inner = 10  # redo train/test split
+    num_outer = 2 # change random seed each time
+    num_inner = 15  # redo train/test split
     clf_thresh = []
     clf_probs = []
     clf_predictions = []
+    weighted_total = []
 
     for outer_loop in xrange(num_outer):
         print("Outer: {0}".format(outer_loop))
@@ -193,8 +194,8 @@ def main():
         random.seed(outer_loop*5)
         for inner_loop in xrange(num_inner):
             print("Inner: {0}".format(inner_loop))
-            for clf in classifiers:
-
+            for clf_idx, clf in enumerate(classifiers):
+                
                 # randly memove some columns (bootstrapping)
 #                cv_data, bs_test_data  = bootstrap(data, test_data)
                 cv_data = data
@@ -239,7 +240,8 @@ def main():
         
                     # run the test data through
                     test_probs = clf.predict_proba(bs_test_data)
-                    clf_probs.append(test_probs)
+                    clf_probs.append(test_probs*classifier_weights[clf_idx])
+                    weighted_total.append(classifier_weights[clf_idx])
         
                     test_predictions = copy.deepcopy(test_probs)
                     test_predictions[test_predictions >= thresh] = 1.
@@ -248,15 +250,17 @@ def main():
                     
                     clf_thresh.append(thresh)
     
-    pkl.dump((clf_probs, clf_predictions, clf_thresh), 
+    pkl.dump((clf_probs, clf_predictions, clf_thresh, weighted_total, classifier_weights ), 
              open('ensemble_predictions.pkl', 'wb'))
 
     # print the results for a range of yes values
-    n_yes_list = [50, 55, 60, 65, 70, 75 ]
-    res_file_base = '../newFeats_RF_SVC_KNN_BMLP_AB_20I_20PCV'
+    n_yes_list = [55, 60, 65, 70, 75, 80 ]
+    res_file_base = '../newFeats_RF_SVC_KNN_BMLP_AB_30I_20PCV_weighted'
+
     for n_yes in n_yes_list:
         res = pd.read_csv('../results.csv')
-        res = res.assign(Attrition=np.average(clf_probs, axis=0))
+        res = res.assign(Attrition=np.average(clf_probs, axis=0, 
+                                              weights=weighted_total))
         sorted_prob = np.sort(res.Attrition.values)
         thresh = 1 - sorted_prob[n_yes-1]
         print("%d thresh = %0.4f" % (n_yes, 1-thresh))
