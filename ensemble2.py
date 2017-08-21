@@ -248,7 +248,7 @@ def clf_eval(x_train, y_train, x_test, clf_list, clf_weights):
         clf.fit(x_train, y_train)
         p_cur = clf.predict_proba(x_test)
         p_list.append(p_cur)
-    p = np.average(np.array(p_list), axis=0, weigths=clf_weights)
+    p = np.average(np.array(p_list), axis=0, weights=clf_weights)
     return p
 
 
