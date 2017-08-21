@@ -152,7 +152,9 @@ def getClassifierList():
 #                            bootstrap_features=True)
 
     # MLP
-    MLP_clf = MLPClassifier(hidden_layer_sizes=(60,50,20), activation='logistic', max_iter=500)
+    MLP_clf = MLPClassifier(hidden_layer_sizes=(60,50,20),
+                            activation='logistic', max_iter=500,
+                            learning_rate_init=0.01)
     MLP_clf_bag = BaggingClassifier(base_estimator=MLP_clf, n_estimators=50,
                                     max_samples=0.8, max_features=0.9,
                                     bootstrap=True,
@@ -170,13 +172,12 @@ def getClassifierList():
 
 
 def cv_eval(clf_list, clf_weights, x_train, y_train, x_test):
-
     p_list = []
     for idx, clf in enumerate(clf_list):
         clf.fit(x_train, y_train)
         p_cur = clf.predict_proba(x_test)
         p_list.append(p_cur)
-    p = np.average(np.array(p_list), axis=0, weights=clf_list)
+    p = np.average(np.array(p_list), axis=0, weights=clf_weights)
     return p
 
 def cv_run(cv_data, labels, clf_list, num_folds, clf_weights, bootstrap=False):
